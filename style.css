@@ -870,3 +870,26 @@ a {
 .welcome-screen[hidden] {
     display: none !important;
 }
+
+
+
+/* Pemberitahuan memori Iona */
+.memory-notice {
+    align-self: center;
+
+    max-width: 100%;
+    margin: -10px 0 0;
+    padding: 6px 11px;
+
+    color: #69617f;
+    background: #f0edfa;
+
+    border: 1px solid #e4def8;
+    border-radius: 999px;
+
+    font-size: 10px;
+    line-height: 1.5;
+    text-align: center;
+
+    animation: fade-in-up 220ms ease both;
+}

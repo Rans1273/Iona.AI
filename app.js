@@ -1,7 +1,6 @@
 
 /* =========================================
-   IONA — SINGLE CONVERSATION
-   Satu percakapan berkelanjutan
+   IONA — SINGLE CONVERSATION + JSON MEMORY
    ========================================= */
 
 (() => {
@@ -10,16 +9,11 @@
 
     // ---------- 1. KONFIGURASI ----------
 
-    const MODEL_NAME = "qwen3.5:2b";
+    const MODEL_NAME = "qwen3.5:0.8b";
 
-    // Satu kunci penyimpanan untuk satu percakapan Iona.
-    const STORAGE_KEY = "iona_single_conversation_v1";
-
-    // Batasi jumlah pesan yang disimpan di browser.
-    const MAX_SAVED_MESSAGES = 100;
-
-    // Jumlah pesan terakhir yang dikirim sebagai konteks model.
-    const MAX_CONTEXT_MESSAGES = 10;
+    // Nama kunci dari versi Iona sebelumnya.
+    // Digunakan sekali untuk migrasi riwayat lama.
+    const LEGACY_STORAGE_KEY = "iona_single_conversation_v1";
 
 
     // ---------- 2. ELEMEN HTML ----------
@@ -31,6 +25,7 @@
     const chatArea = document.getElementById("chatArea");
     const messagesContainer = document.getElementById("messagesContainer");
     const welcomeScreen = document.getElementById("welcomeScreen");
+
     const modelStatus = document.getElementById("modelStatus");
 
     const connectionIndicators = document.querySelectorAll(
@@ -49,6 +44,7 @@
         console.error(
             "Iona: Elemen HTML utama tidak ditemukan. Periksa index.html."
         );
+
         return;
     }
 
@@ -57,74 +53,82 @@
 
     const SYSTEM_MESSAGE = {
         role: "system",
+
         content: `
 IDENTITAS
 Kamu adalah Iona, asisten AI pribadi pengguna.
 Kamu ramah, cerdas, tenang, teliti, dan alami ketika berbicara.
 Tujuanmu adalah membantu pengguna belajar, berpikir, berkarya,
-serta menyelesaikan masalah.
+dan menyelesaikan masalah.
 
 BAHASA DAN KOMUNIKASI
 1. Gunakan bahasa Indonesia sebagai bahasa utama.
-2. Berbicara secara alami, ramah, dan tidak kaku.
+2. Berbicaralah secara alami, ramah, dan tidak kaku.
 3. Jawab langsung sesuai inti pertanyaan.
-4. Untuk pertanyaan sederhana, jawab secara ringkas.
+4. Untuk pertanyaan sederhana, jawab dengan ringkas.
 5. Untuk masalah kompleks, berikan penjelasan terstruktur.
-6. Hindari basa-basi panjang, pengulangan, dan daftar yang tidak perlu.
+6. Hindari pengulangan, basa-basi panjang, dan daftar yang tidak perlu.
 7. Sesuaikan panjang jawaban dengan kebutuhan pengguna.
 
 PENYELESAIAN MASALAH
 1. Pahami maksud dan konteks pertanyaan sebelum menjawab.
 2. Pecah masalah rumit menjadi tahap yang mudah diikuti.
-3. Pilih solusi yang realistis dan sesuai kebutuhan pengguna.
+3. Pilih solusi yang realistis dan sesuai kebutuhan.
 4. Jelaskan jika terdapat kekeliruan dalam asumsi pengguna.
 5. Jangan mengarang jawaban jika informasi tidak mencukupi.
-6. Tanyakan informasi tambahan hanya jika benar-benar diperlukan.
+6. Tanyakan informasi tambahan hanya jika diperlukan.
 
 KETEPATAN DAN KEJUJURAN
 1. Utamakan ketepatan, relevansi, dan kejelasan.
-2. Bedakan fakta, perkiraan, pendapat, dan ketidakpastian.
-3. Jika tidak tahu, akui keterbatasanmu.
+2. Bedakan fakta, perkiraan, opini, dan ketidakpastian.
+3. Jika tidak mengetahui jawabannya, akui keterbatasanmu.
 4. Jangan mengarang sumber, kutipan, hasil pengujian, atau data.
 5. Jangan mengaku telah mengakses internet, membaca file,
-   menjalankan kode, atau memeriksa perangkat jika hal itu
-   tidak benar-benar dilakukan.
+   menjalankan kode, atau memeriksa perangkat jika tidak dilakukan.
 6. Jangan memberikan kepastian palsu tentang keberhasilan solusi.
 
 PEMROGRAMAN DAN TEKNIS
 1. Jelaskan langkah teknis secara berurutan.
 2. Berikan contoh konkret yang mudah diterapkan.
 3. Jika diminta kode lengkap, berikan kode yang utuh.
-4. Saat memperbaiki proyek yang sudah ada, pertahankan fitur
-   dan tampilan yang tidak diminta untuk diubah.
+4. Saat memperbaiki kode, pertahankan fitur serta tampilan
+   yang tidak diminta untuk diubah.
 5. Tunjukkan dengan jelas file dan bagian yang perlu diubah.
-6. Saat melakukan debugging, periksa penyebab secara sistematis.
+6. Lakukan debugging secara sistematis.
 7. Jangan mengarang nama fungsi, library, atau kemampuan teknologi.
-8. Jika kode belum diuji, katakan bahwa kode masih perlu diuji.
+8. Jika kode belum diuji, katakan bahwa kode perlu diuji.
 
 KONTEKS PENGGUNA
-Pengguna tertarik pada perangkat lunak, perangkat keras,
-HTML, CSS, JavaScript, Python, IoT, ESP32, Arduino,
-Firebase, dan pengembangan aplikasi.
-Gunakan konteks tersebut ketika relevan, tetapi jangan
-menganggap semua pertanyaan pasti berkaitan dengan teknologi.
+Pengguna tertarik pada perangkat lunak dan perangkat keras,
+HTML, CSS, JavaScript, Python, IoT, ESP32, Arduino, Firebase,
+dan pengembangan aplikasi.
+Gunakan konteks ini jika relevan. Jangan menganggap semua
+pertanyaan pasti berkaitan dengan teknologi.
 
-KETERBATASAN
+MEMORI DAN KONTEKS PERCAKAPAN
+1. Gunakan riwayat percakapan yang tersedia untuk memahami konteks.
+2. Gunakan memori jangka panjang yang diberikan sistem jika relevan.
+3. Jangan mengarang ingatan atau mengaku mengingat informasi
+   yang tidak tersedia dalam riwayat maupun memori.
+4. Jika informasi lama tidak tersedia, jelaskan keterbatasanmu.
+5. Jangan mengulang memori pribadi pengguna jika tidak relevan.
+6. Jika pengguna meminta informasi tertentu dilupakan, hormati
+   permintaan tersebut sesuai kemampuan aplikasi.
+
+BATASAN
 1. Kamu berjalan menggunakan model lokal melalui Ollama.
 2. Kamu hanya dapat melakukan tindakan yang didukung aplikasi.
 3. Kamu tidak otomatis memiliki akses ke internet, file,
    kamera, mikrofon, atau perangkat fisik.
-4. Jangan mengaku mengingat percakapan yang tidak tersedia
-   dalam konteks yang diberikan.
-5. Jika suatu kemampuan belum tersedia, jelaskan keterbatasannya
-   dengan jujur dan berikan alternatif yang realistis.
+4. Jika suatu kemampuan belum tersedia, jelaskan keterbatasannya
+   dan berikan alternatif yang realistis.
 
 FORMAT JAWABAN
 1. Gunakan judul jika jawaban memiliki beberapa bagian.
 2. Gunakan daftar untuk langkah atau pilihan yang memang perlu.
-3. Gunakan tabel jika membantu membandingkan informasi.
+3. Gunakan tabel jika membantu perbandingan.
 4. Berikan kode dalam blok kode yang sesuai.
-5. Jelaskan istilah teknis secara sederhana jika diperlukan.
+5. Jelaskan istilah teknis dengan bahasa sederhana jika diperlukan.
 
 PRINSIP UTAMA
 Jadilah asisten yang membantu pengguna menyelesaikan masalah,
@@ -135,69 +139,7 @@ Tetaplah menjadi Iona.
     };
 
 
-    // ---------- 4. PENYIMPANAN SATU PERCAKAPAN ----------
-
-    function loadHistory() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-
-            if (!saved) {
-                return [];
-            }
-
-            const parsed = JSON.parse(saved);
-
-            if (!Array.isArray(parsed)) {
-                return [];
-            }
-
-            return parsed
-                .filter((item) => {
-                    return (
-                        item &&
-                        ["user", "assistant"].includes(item.role) &&
-                        typeof item.content === "string"
-                    );
-                })
-                .slice(-MAX_SAVED_MESSAGES);
-
-        } catch (error) {
-            console.error(
-                "Iona: Riwayat tersimpan tidak dapat dibaca.",
-                error
-            );
-
-            return [];
-        }
-    }
-
-
-    let conversationHistory = loadHistory();
-    let isSending = false;
-
-
-    function saveHistory() {
-        try {
-            // Simpan hanya pesan percakapan, bukan system prompt.
-            conversationHistory = conversationHistory.slice(
-                -MAX_SAVED_MESSAGES
-            );
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(conversationHistory)
-            );
-
-        } catch (error) {
-            console.error(
-                "Iona: Riwayat tidak berhasil disimpan.",
-                error
-            );
-        }
-    }
-
-
-    // ---------- 5. STATUS KONEKSI ----------
+    // ---------- 4. STATUS KONEKSI ----------
 
     function setConnectionStatus(state, message) {
         const colors = {
@@ -219,7 +161,10 @@ Tetaplah menjadi Iona.
 
 
     async function checkConnection() {
-        setConnectionStatus("warning", "Memeriksa koneksi...");
+        setConnectionStatus(
+            "warning",
+            "Memeriksa koneksi..."
+        );
 
         try {
             const response = await fetch("/api/health", {
@@ -228,7 +173,9 @@ Tetaplah menjadi Iona.
             });
 
             if (!response.ok) {
-                throw new Error("Server lokal memberikan respons gagal.");
+                throw new Error(
+                    "Server memberikan respons yang tidak berhasil."
+                );
             }
 
             const result = await response.json();
@@ -274,7 +221,7 @@ Tetaplah menjadi Iona.
     }
 
 
-    // ---------- 6. MENGATUR AREA CHAT ----------
+    // ---------- 5. TAMPILAN PESAN ----------
 
     function scrollToBottom(behavior = "smooth") {
         requestAnimationFrame(() => {
@@ -286,37 +233,48 @@ Tetaplah menjadi Iona.
     }
 
 
-    function updateWelcomeScreen() {
-        welcomeScreen.hidden = conversationHistory.length > 0;
+    function updateWelcomeScreen(hasMessages) {
+        welcomeScreen.hidden = hasMessages;
     }
 
 
-    // ---------- 7. MENAMPILKAN PESAN ----------
-
-    function addMessage(role, text, shouldScroll = true) {
+    function addMessage(role, text, shouldScroll = true, isError = false) {
         const messageElement = document.createElement("article");
+
         messageElement.className = `message ${role}`;
+
+        if (isError) {
+            messageElement.classList.add("message-error");
+        }
 
         const messageHeader = document.createElement("div");
         messageHeader.className = "message-header";
 
         const avatar = document.createElement("span");
         avatar.className = "message-avatar";
+
         avatar.textContent = role === "assistant" ? "i" : "K";
         avatar.setAttribute("aria-hidden", "true");
 
         const name = document.createElement("span");
-        name.textContent = role === "assistant" ? "Iona" : "Kamu";
+
+        name.textContent = role === "assistant"
+            ? "Iona"
+            : "Kamu";
 
         messageHeader.append(avatar, name);
 
         const messageContent = document.createElement("div");
         messageContent.className = "message-content";
 
-        // Tampilkan sebagai teks, bukan HTML aktif.
+        // Teks tidak dieksekusi sebagai HTML.
         messageContent.textContent = text;
 
-        messageElement.append(messageHeader, messageContent);
+        messageElement.append(
+            messageHeader,
+            messageContent
+        );
+
         messagesContainer.appendChild(messageElement);
 
         if (shouldScroll) {
@@ -327,7 +285,7 @@ Tetaplah menjadi Iona.
     }
 
 
-    // ---------- 8. INDIKATOR PROSES ----------
+    // ---------- 6. INDIKATOR PROSES ----------
 
     function showTypingIndicator() {
         const messageElement = document.createElement("article");
@@ -357,11 +315,18 @@ Tetaplah menjadi Iona.
         );
 
         for (let index = 0; index < 3; index += 1) {
-            indicator.appendChild(document.createElement("span"));
+            indicator.appendChild(
+                document.createElement("span")
+            );
         }
 
         content.appendChild(indicator);
-        messageElement.append(messageHeader, content);
+
+        messageElement.append(
+            messageHeader,
+            content
+        );
+
         messagesContainer.appendChild(messageElement);
 
         scrollToBottom();
@@ -370,7 +335,173 @@ Tetaplah menjadi Iona.
     }
 
 
-    // ---------- 9. INPUT PESAN ----------
+    // ---------- 7. MEMUAT RIWAYAT DARI JSON ----------
+
+    async function migrateOldBrowserHistory() {
+        /*
+         * Versi Iona sebelumnya menyimpan riwayat ke localStorage.
+         * Jika data tersebut masih ada dan riwayat server kosong,
+         * pindahkan ke file JSON melalui server Python.
+         */
+
+        let oldRawData;
+
+        try {
+            oldRawData = localStorage.getItem(
+                LEGACY_STORAGE_KEY
+            );
+        } catch (error) {
+            console.warn(
+                "Iona: Penyimpanan browser lama tidak dapat diperiksa.",
+                error
+            );
+
+            return;
+        }
+
+        if (!oldRawData) {
+            return;
+        }
+
+        let oldMessages;
+
+        try {
+            oldMessages = JSON.parse(oldRawData);
+        } catch (error) {
+            console.warn(
+                "Iona: Riwayat browser lama bukan JSON yang valid.",
+                error
+            );
+
+            return;
+        }
+
+        if (!Array.isArray(oldMessages) || oldMessages.length === 0) {
+            return;
+        }
+
+        try {
+            const currentResponse = await fetch(
+                "/api/conversation",
+                { cache: "no-store" }
+            );
+
+            if (!currentResponse.ok) {
+                return;
+            }
+
+            const currentData = await currentResponse.json();
+            const currentMessages = Array.isArray(currentData.messages)
+                ? currentData.messages
+                : [];
+
+            // Jangan mencampur riwayat lama dengan percakapan
+            // JSON yang sudah terisi.
+            if (currentMessages.length > 0) {
+                return;
+            }
+
+            const importResponse = await fetch(
+                "/api/import-conversation",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        messages: oldMessages
+                    })
+                }
+            );
+
+            if (!importResponse.ok) {
+                console.warn(
+                    "Iona: Migrasi riwayat lama tidak berhasil."
+                );
+
+                return;
+            }
+
+            const result = await importResponse.json();
+
+            if (result.imported) {
+                try {
+                    // Hapus salinan lama hanya setelah server
+                    // mengonfirmasi bahwa impor berhasil.
+                    localStorage.removeItem(
+                        LEGACY_STORAGE_KEY
+                    );
+                } catch (error) {
+                    console.warn(
+                        "Iona: Salinan lama tetap tersimpan di browser.",
+                        error
+                    );
+                }
+
+                console.info(
+                    `Iona: ${result.count} pesan berhasil dipindahkan ke JSON.`
+                );
+            }
+
+        } catch (error) {
+            console.warn(
+                "Iona: Migrasi riwayat lama tidak tersedia.",
+                error
+            );
+        }
+    }
+
+
+    async function restoreConversation() {
+        const response = await fetch(
+            "/api/conversation",
+            {
+                method: "GET",
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Riwayat percakapan tidak dapat dimuat dari server."
+            );
+        }
+
+        const result = await response.json();
+
+        const messages = Array.isArray(result.messages)
+            ? result.messages
+            : [];
+
+        messagesContainer.replaceChildren();
+
+        const validMessages = messages.filter((message) => {
+            return (
+                message &&
+                ["user", "assistant"].includes(message.role) &&
+                typeof message.content === "string"
+            );
+        });
+
+        validMessages.forEach((message) => {
+            addMessage(
+                message.role,
+                message.content,
+                false
+            );
+        });
+
+        updateWelcomeScreen(validMessages.length > 0);
+
+        if (validMessages.length > 0) {
+            scrollToBottom("auto");
+        }
+    }
+
+
+    // ---------- 8. INPUT PESAN ----------
 
     function resetInputHeight() {
         messageInput.style.height = "auto";
@@ -389,11 +520,14 @@ Tetaplah menjadi Iona.
     }
 
 
-    messageInput.addEventListener("input", resizeInput);
+    messageInput.addEventListener(
+        "input",
+        resizeInput
+    );
 
 
-    // Enter untuk mengirim.
-    // Shift + Enter untuk membuat baris baru.
+    // Enter = kirim pesan.
+    // Shift + Enter = baris baru.
     messageInput.addEventListener("keydown", (event) => {
         if (
             event.key === "Enter" &&
@@ -406,7 +540,55 @@ Tetaplah menjadi Iona.
     });
 
 
-    // ---------- 10. MENGIRIM PESAN KE OLLAMA ----------
+    // ---------- 9. MENGIRIM PESAN KE IONA ----------
+
+    let isSending = false;
+    
+    
+    function showMemoryNotice(memoryAction) {
+        if (!memoryAction) {
+            return;
+        }
+
+        let noticeText = "";
+
+        if (
+            memoryAction.action === "auto_add" &&
+            memoryAction.saved
+        ) {
+            noticeText = "Memori jangka panjang tersimpan otomatis.";
+        } else if (
+            memoryAction.action === "add" &&
+            memoryAction.saved
+        ) {
+            noticeText = "Memori jangka panjang berhasil disimpan.";
+        } else if (
+            memoryAction.action === "clear" &&
+            memoryAction.saved
+        ) {
+            noticeText = "Semua memori jangka panjang telah dihapus.";
+        } else if (
+            memoryAction.action === "delete" &&
+            memoryAction.saved
+        ) {
+            noticeText =
+                `${memoryAction.removed} memori berhasil dihapus.`;
+        }
+
+        if (!noticeText) {
+            return;
+        }
+
+        const notice = document.createElement("div");
+
+        notice.className = "memory-notice";
+        notice.setAttribute("role", "status");
+        notice.textContent = `♧ ${noticeText}`;
+
+        messagesContainer.appendChild(notice);
+
+        scrollToBottom();
+    }
 
     async function sendMessage(rawText) {
         const text = rawText.trim();
@@ -436,15 +618,10 @@ Tetaplah menjadi Iona.
             sendIcon.textContent = "…";
         }
 
-        welcomeScreen.hidden = true;
+        updateWelcomeScreen(true);
 
-        // Masukkan pesan pengguna ke percakapan tunggal.
-        conversationHistory.push({
-            role: "user",
-            content: text
-        });
-
-        saveHistory();
+        // Tampilkan pesan dengan segera.
+        // Pesan akan disimpan oleh server setelah AI berhasil menjawab.
         addMessage("user", text);
 
         messageInput.value = "";
@@ -453,48 +630,58 @@ Tetaplah menjadi Iona.
         const typingElement = showTypingIndicator();
 
         try {
-            const messagesForModel = [
-                SYSTEM_MESSAGE,
-                ...conversationHistory.slice(-MAX_CONTEXT_MESSAGES)
-            ];
+            const response = await fetch(
+                "/api/chat",
+                {
+                    method: "POST",
 
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    messages: messagesForModel
-                })
-            });
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-            const result = await response.json();
+                    body: JSON.stringify({
+                        message: text,
+                        systemPrompt: SYSTEM_MESSAGE.content
+                    })
+                }
+            );
+
+            let result;
+
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error(
+                    "Server tidak memberikan respons JSON yang valid."
+                );
+            }
 
             if (!response.ok) {
                 throw new Error(
-                    result.error || "Permintaan ke model lokal gagal."
+                    result.error ||
+                    "Iona gagal memproses pesan."
                 );
             }
 
             const reply = result.message?.content;
 
-            if (typeof reply !== "string" || !reply.trim()) {
+            if (
+                typeof reply !== "string" ||
+                !reply.trim()
+            ) {
                 throw new Error(
-                    "Ollama memberikan jawaban kosong. " +
-                    "Pastikan model dan server berjalan dengan benar."
+                    "Iona menerima jawaban kosong dari Ollama."
                 );
             }
 
-            // Simpan jawaban yang berhasil diterima.
-            conversationHistory.push({
-                role: "assistant",
-                content: reply
-            });
-
-            saveHistory();
-
             typingElement.remove();
-            addMessage("assistant", reply);
+
+            addMessage(
+                "assistant",
+                reply
+            );
+
+            showMemoryNotice(result.memoryAction);
 
             setConnectionStatus(
                 "connected",
@@ -509,14 +696,15 @@ Tetaplah menjadi Iona.
 
             typingElement.remove();
 
-            // Pesan kesalahan ditampilkan, tetapi tidak dimasukkan
-            // ke konteks percakapan AI.
             addMessage(
                 "assistant",
-                "Maaf, aku belum berhasil memproses pesanmu.\n\n" +
+
+                "Maaf, brow. Aku belum berhasil memproses pesanmu.\n\n" +
                 error.message +
-                "\n\nPastikan Ollama dan server.py berjalan, " +
-                "serta model " + MODEL_NAME + " tersedia."
+                "\n\nPeriksa apakah Ollama dan server.py masih berjalan.",
+
+                true,
+                true
             );
 
             await checkConnection();
@@ -540,15 +728,13 @@ Tetaplah menjadi Iona.
     }
 
 
-    // ---------- 11. FORM CHAT ----------
+    // ---------- 10. FORM DAN KARTU SARAN ----------
 
     chatForm.addEventListener("submit", (event) => {
         event.preventDefault();
         sendMessage(messageInput.value);
     });
 
-
-    // ---------- 12. KARTU SARAN AWAL ----------
 
     document.querySelectorAll(".suggestion-card").forEach((button) => {
         button.addEventListener("click", () => {
@@ -561,35 +747,32 @@ Tetaplah menjadi Iona.
     });
 
 
-    // ---------- 13. MEMULIHKAN PERCAKAPAN ----------
-
-    function restoreConversation() {
-        if (conversationHistory.length === 0) {
-            welcomeScreen.hidden = false;
-            return;
-        }
-
-        welcomeScreen.hidden = true;
-
-        conversationHistory.forEach((message) => {
-            addMessage(
-                message.role,
-                message.content,
-                false
-            );
-        });
-
-        scrollToBottom("auto");
-    }
-
-
-    // ---------- 14. MULAI IONA ----------
+    // ---------- 11. MULAI APLIKASI ----------
 
     async function initializeIona() {
-        restoreConversation();
+        try {
+            await migrateOldBrowserHistory();
+            await restoreConversation();
+
+        } catch (error) {
+            console.error(
+                "Iona: Riwayat percakapan gagal dimuat.",
+                error
+            );
+
+            setConnectionStatus(
+                "warning",
+                "Riwayat belum dapat dimuat"
+            );
+        }
+
         await checkConnection();
 
-        console.log("Iona siap digunakan.");
+        messageInput.focus();
+
+        console.log(
+            `Iona siap digunakan dengan model ${MODEL_NAME}.`
+        );
     }
 
 
