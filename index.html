@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Iona — Asisten Pribadi</title>
+
+    <meta
+        name="description"
+        content="Iona adalah asisten AI pribadi yang berjalan secara lokal."
+    >
+
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <!-- Header utama Iona -->
+        <header class="topbar">
+
+            <a href="#" class="brand" aria-label="Iona">
+                <span class="brand-icon">i</span>
+
+                <span class="brand-copy">
+                    <strong>Iona</strong>
+                    <small>Asisten pribadimu</small>
+                </span>
+            </a>
+
+            <div class="connection-pill">
+                <span class="connection-indicator"></span>
+                <span id="modelStatus">Memeriksa koneksi...</span>
+            </div>
+
+        </header>
+
+
+        <!-- Satu ruang percakapan -->
+        <main class="main-content">
+
+            <section class="chat-area" id="chatArea">
+
+                <!-- Sapaan awal -->
+                <div class="welcome-screen" id="welcomeScreen">
+
+                    <div class="welcome-logo" aria-hidden="true">
+                        i
+                    </div>
+
+                    <p class="welcome-eyebrow">
+                        ASISTEN PRIBADIMU
+                    </p>
+
+                    <h1>
+                        Halo, aku <span>Iona.</span>
+                    </h1>
+
+                    <p class="welcome-description">
+                        Aku di sini untuk membantumu belajar,
+                        berpikir, berkarya, dan menyelesaikan masalah.
+                        Mulai saja dari apa yang ingin kamu bahas.
+                    </p>
+
+                    <!-- Saran awal, bukan daftar percakapan -->
+                    <div class="suggestion-grid">
+
+                        <button
+                            type="button"
+                            class="suggestion-card"
+                            data-prompt="Bantu aku mempelajari sesuatu yang baru dengan penjelasan sederhana."
+                        >
+                            <span class="suggestion-icon">✦</span>
+                            <span class="suggestion-title">
+                                Belajar sesuatu
+                            </span>
+                            <span class="suggestion-description">
+                                Pelajari topik baru dengan mudah.
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="suggestion-card"
+                            data-prompt="Bantu aku menyusun rencana untuk mencapai tujuanku."
+                        >
+                            <span class="suggestion-icon">◎</span>
+                            <span class="suggestion-title">
+                                Susun rencana
+                            </span>
+                            <span class="suggestion-description">
+                                Ubah ide menjadi langkah nyata.
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="suggestion-card"
+                            data-prompt="Bantu aku menulis atau memperbaiki kode program. Jelaskan langkahnya dengan jelas."
+                        >
+                            <span class="suggestion-icon">⌘</span>
+                            <span class="suggestion-title">
+                                Menulis kode
+                            </span>
+                            <span class="suggestion-description">
+                                Bangun dan perbaiki proyek.
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="suggestion-card"
+                            data-prompt="Aku ingin berdiskusi tentang sebuah ide. Bantu aku mengevaluasinya."
+                        >
+                            <span class="suggestion-icon">◌</span>
+                            <span class="suggestion-title">
+                                Bertukar ide
+                            </span>
+                            <span class="suggestion-description">
+                                Bahas ide dan temukan solusi.
+                            </span>
+                        </button>
+
+                    </div>
+                </div>
+
+
+                <!-- Semua pesan berada dalam satu percakapan -->
+                <div
+                    class="messages-container"
+                    id="messagesContainer"
+                    aria-live="polite"
+                    aria-label="Percakapan dengan Iona"
+                ></div>
+
+            </section>
+
+
+            <!-- Kolom untuk mengirim pesan -->
+            <footer class="composer-area">
+
+                <form class="chat-form" id="chatForm">
+
+                    <textarea
+                        id="messageInput"
+                        name="message"
+                        rows="1"
+                        maxlength="10000"
+                        placeholder="Ceritakan apa yang sedang kamu pikirkan..."
+                        aria-label="Tulis pesan untuk Iona"
+                        required
+                    ></textarea>
+
+                    <div class="composer-bottom">
+
+                        <div class="composer-note">
+                            <span class="composer-dot"></span>
+                            Percakapan pribadi di perangkat ini
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="send-button"
+                            id="sendButton"
+                            aria-label="Kirim pesan"
+                            title="Kirim pesan"
+                        >
+                            <span>Kirim</span>
+                            <span aria-hidden="true">↑</span>
+                        </button>
+
+                    </div>
+                </form>
+
+                <p class="disclaimer">
+                    Iona dapat membuat kesalahan. Periksa kembali
+                    informasi yang penting.
+                </p>
+
+            </footer>
+
+        </main>
+
+    </div>
+</body>
+</html>
